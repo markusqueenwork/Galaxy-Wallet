@@ -11,7 +11,7 @@
         android:theme="@style/Theme.GalaxyWallet">
         
         <activity
-            android:name=".MainActivity"
+            android:name=".MainActivityV2"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

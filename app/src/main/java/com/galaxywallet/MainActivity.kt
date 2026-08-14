@@ -164,7 +164,7 @@ fun WalletApp() {
                                 0, 0
                             )
                             val derivedKey = Bip32ECKeyPair.deriveKeyPair(masterKey, path)
-                            val credentials = Credentials.create(derivedKey)
+                            val credentials = Credentials.create(derivedKey.privateKey)
                             encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
                             encryptedPrefs.edit().putString("address", credentials.address).apply()
                             currentScreen = "pin"
@@ -220,7 +220,7 @@ fun WalletApp() {
                         0, 0
                     )
                     val derivedKey = Bip32ECKeyPair.deriveKeyPair(masterKey, path)
-                    val credentials = Credentials.create(derivedKey)
+                    val credentials = Credentials.create(derivedKey.privateKey)
                     encryptedPrefs.edit().putString("mnemonic_encrypted", importSeedInput).apply()
                     encryptedPrefs.edit().putString("address", credentials.address).apply()
                     currentScreen = "pin"

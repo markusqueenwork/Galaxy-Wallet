@@ -109,7 +109,7 @@ fun WalletApp() {
                 Button(
                     onClick = {
                         try {
-                            val credentials = Credentials.create(derivedKey.privateKey.toString(16).padStart(64, '0'))
+                            mnemonic = MnemonicUtils.generateMnemonic()
                             currentScreen = "seed"
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -155,7 +155,6 @@ fun WalletApp() {
                 Button(
                     onClick = {
                         try {
-                            // BIP32 деривация для Ethereum
                             val seed = MnemonicUtils.generateSeed(mnemonic, "")
                             val masterKey = Bip32ECKeyPair.generateKeyPair(seed)
                             val path = intArrayOf(
@@ -165,7 +164,8 @@ fun WalletApp() {
                                 0, 0
                             )
                             val derivedKey = Bip32ECKeyPair.deriveKeyPair(masterKey, path)
-                            val credentials = Credentials.create(derivedKey)
+                            val privateKeyHex = derivedKey.privateKey.toString(16).padStart(64, '0')
+                            val credentials = Credentials.create(privateKeyHex)
                             encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
                             encryptedPrefs.edit().putString("address", credentials.address).apply()
                             currentScreen = "pin"
@@ -221,7 +221,8 @@ fun WalletApp() {
                         0, 0
                     )
                     val derivedKey = Bip32ECKeyPair.deriveKeyPair(masterKey, path)
-                    val credentials = Credentials.create(derivedKey)
+                    val privateKeyHex = derivedKey.privateKey.toString(16).padStart(64, '0')
+                    val credentials = Credentials.create(privateKeyHex)
                     encryptedPrefs.edit().putString("mnemonic_encrypted", importSeedInput).apply()
                     encryptedPrefs.edit().putString("address", credentials.address).apply()
                     currentScreen = "pin"

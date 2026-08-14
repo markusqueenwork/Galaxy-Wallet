@@ -40,8 +40,18 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("org.web3j:core:4.9.8")
+    
+    // Web3j для Ethereum/Base
+    implementation("org.web3j:core:4.9.8") {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+    }
+    
+    // BouncyCastle единая версия
+    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
+    
+    // HTTP клиент
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    
+    // JSON
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("org.bitcoinj:bitcoinj-core:0.16.2")
 }

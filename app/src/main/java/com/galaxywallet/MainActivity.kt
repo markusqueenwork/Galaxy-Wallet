@@ -17,6 +17,7 @@ import org.web3j.crypto.MnemonicUtils
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import android.content.SharedPreferences
+import com.galaxywallet.ui.screens.MainScreen // Ваш красивый MainScreen из ui/screens
 
 class MainActivity : ComponentActivity() {
 
@@ -44,12 +45,10 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when (currentScreen) {
-                        "language" -> LocalLanguageScreen(
-                            onLanguageSelected = { lang ->
-                                encryptedPrefs.edit().putString("language", lang).apply()
-                                currentScreen = "create_import"
-                            }
-                        )
+                        "language" -> LocalLanguageScreen(onLanguageSelected = { lang ->
+                            encryptedPrefs.edit().putString("language", lang).apply()
+                            currentScreen = "create_import"
+                        })
                         "create_import" -> LocalCreateImportScreen(
                             onCreate = { currentScreen = "create_wallet" },
                             onImport = { currentScreen = "import" }
@@ -61,54 +60,39 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "seed"
                             }
                         )
-                        "seed" -> LocalSeedPhraseScreen(
-                            mnemonic = mnemonic,
-                            onCopy = {},
-                            onSaved = {
+                        "seed" -> LocalSeedPhraseScreen(mnemonic = mnemonic, onCopy = {}, onSaved = {
+                            try {
+                                val seed = MnemonicUtils.generateSeed(mnemonic, "")
+                                val keyPair = ECKeyPair.create(seed)
+                                val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
+                                val credentials = Credentials.create(privateKeyHex)
+                                
+                                encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
+                                encryptedPrefs.edit().putString("address", credentials.address).apply()
+                                currentScreen = "pin"
+                            } catch (e: Exception) { e.printStackTrace() }
+                        })
+                        "import" -> LocalImportScreen(onBack = { currentScreen = "create_import" }, 
+                            onImported = { inputSeed: String -> // Явный тип String убирает ошибку p0 навсегда
                                 try {
-                                    val seed = MnemonicUtils.generateSeed(mnemonic, "")
-                                    val keyPair = ECKeyPair.create(seed)
-                                    val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
-                                    val credentials = Credentials.create(privateKeyHex)
-                                    
-                                    encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
-                                    encryptedPrefs.edit().putString("address", credentials.address).apply()
-                                    currentScreen = "pin"
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        )
-                        "import" -> LocalImportScreen(
-                            onBack = { currentScreen = "create_import" },
-                            onImported = { seed: String ->
-                                try {
-                                    val generatedSeed = MnemonicUtils.generateSeed(seed, "")
+                                    val generatedSeed = MnemonicUtils.generateSeed(inputSeed, "")
                                     val keyPair = ECKeyPair.create(generatedSeed)
                                     val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
                                     val credentials = Credentials.create(privateKeyHex)
                                     
-                                    encryptedPrefs.edit().putString("mnemonic_encrypted", seed).apply()
+                                    encryptedPrefs.edit().putString("mnemonic_encrypted", inputSeed).apply()
                                     encryptedPrefs.edit().putString("address", credentials.address).apply()
                                     currentScreen = "pin"
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                                } catch (e: Exception) { e.printStackTrace() }
                             }
                         )
-                        "pin" -> LocalPinScreen(
-                            title = "Создайте PIN-код",
-                            onPinComplete = { pin ->
-                                encryptedPrefs.edit().putString("pin", pin).apply()
-                                currentScreen = "main"
-                            }
-                        )
+                        "pin" -> LocalPinScreen(title = "Создайте PIN-код", onPinComplete = { pin ->
+                            encryptedPrefs.edit().putString("pin", pin).apply()
+                            currentScreen = "main"
+                        })
                         "main" -> MainScreen(
                             address = encryptedPrefs.getString("address", "0x...") ?: "0x...",
-                            onSend = {},
-                            onReceive = {},
-                            onSwap = {},
-                            onBuy = {},
+                            onSend = {}, onReceive = {}, onSwap = {}, onBuy = {},
                             onLogout = {
                                 encryptedPrefs.edit().clear().apply()
                                 currentScreen = "language"
@@ -121,7 +105,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// --- ЛОКАЛЬНЫЕ ЗАГЛУШКИ (с префиксом Local, чтобы не было конфликтов) ---
+// --- ЛОКАЛЬНЫЕ ЗАГЛУШКИ С ПРЕФИКСОМ LOCAL (Исключает любые конфликты имен) ---
 
 @Composable
 fun LocalLanguageScreen(onLanguageSelected: (String) -> Unit) {
@@ -173,18 +157,9 @@ fun LocalImportScreen(onBack: () -> Unit, onImported: (String) -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("Импорт кошелька", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(
-            value = seed, 
-            onValueChange = { seed = it }, 
-            modifier = Modifier.fillMaxWidth(), 
-            placeholder = { Text("Seed-фраза") }
-        )
+        OutlinedTextField(value = seed, onValueChange = { seed = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Seed-фраза") })
         Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = { onImported(seed) }, 
-            modifier = Modifier.fillMaxWidth(), 
-            enabled = seed.isNotEmpty()
-        ) { Text("Импортировать") }
+        Button(onClick = { onImported(seed) }, modifier = Modifier.fillMaxWidth(), enabled = seed.isNotEmpty()) { Text("Импортировать") }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Назад") }
     }

@@ -16,8 +16,6 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import org.web3j.crypto.MnemonicUtils
 import org.web3j.crypto.Credentials
-import org.web3j.crypto.ECKeyPair
-import java.math.BigInteger
 import android.content.SharedPreferences
 import com.galaxywallet.ui.screens.MainScreen
 
@@ -156,13 +154,12 @@ fun WalletApp() {
                 Button(
                     onClick = {
                         try {
-                            // ИСПРАВЛЕНИЕ: Преобразование seed в BigInteger
                             val seed = MnemonicUtils.generateSeed(mnemonic, "")
-                            val keyPair = ECKeyPair.create(BigInteger(1, seed))
-                            val hex = keyPair.privateKey.toString(16).padStart(64, '0')
-                            val cred = Credentials.create(hex)
+                            val privateKeyBytes = seed.copyOfRange(0, 32)
+                            val privateKeyHex = privateKeyBytes.joinToString("") { "%02x".format(it) }
+                            val credentials = Credentials.create(privateKeyHex)
                             encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
-                            encryptedPrefs.edit().putString("address", cred.address).apply()
+                            encryptedPrefs.edit().putString("address", credentials.address).apply()
                             currentScreen = "pin"
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -207,13 +204,12 @@ fun WalletApp() {
         "import_processing" -> {
             LaunchedEffect(Unit) {
                 try {
-                    // ИСПРАВЛЕНИЕ: Преобразование seed в BigInteger
                     val genSeed = MnemonicUtils.generateSeed(importSeedInput, "")
-                    val keyPair = ECKeyPair.create(BigInteger(1, genSeed))
-                    val hex = keyPair.privateKey.toString(16).padStart(64, '0')
-                    val cred = Credentials.create(hex)
+                    val privateKeyBytes = genSeed.copyOfRange(0, 32)
+                    val privateKeyHex = privateKeyBytes.joinToString("") { "%02x".format(it) }
+                    val credentials = Credentials.create(privateKeyHex)
                     encryptedPrefs.edit().putString("mnemonic_encrypted", importSeedInput).apply()
-                    encryptedPrefs.edit().putString("address", cred.address).apply()
+                    encryptedPrefs.edit().putString("address", credentials.address).apply()
                     currentScreen = "pin"
                 } catch (e: Exception) {
                     currentScreen = "import_input"

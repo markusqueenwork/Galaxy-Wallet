@@ -109,7 +109,7 @@ fun WalletApp() {
                 Button(
                     onClick = {
                         try {
-                            mnemonic = MnemonicUtils.generateMnemonic()
+                            val credentials = Credentials.create(derivedKey.privateKey.toString(16).padStart(64, '0'))
                             currentScreen = "seed"
                         } catch (e: Exception) {
                             e.printStackTrace()

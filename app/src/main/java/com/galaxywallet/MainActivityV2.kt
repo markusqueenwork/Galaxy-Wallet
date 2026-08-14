@@ -61,11 +61,7 @@ fun WalletApp() {
     val context = LocalContext.current
 
     var currentScreen by remember {
-        mutableStateOf("language")
-    }
-
-    var mnemonic by remember {
-        mutableStateOf("")
+        mutableStateOf("import")
     }
 
     var importSeedInput by remember {
@@ -87,134 +83,54 @@ fun WalletApp() {
     }
 
     if (
-        currentScreen == "language" &&
-        encryptedPrefs.contains("mnemonic_encrypted")
+        currentScreen == "import" &&
+        encryptedPrefs.contains("mnemonic_encrypted") &&
+        encryptedPrefs.contains("address")
     ) {
         currentScreen = "main"
     }
 
     when (currentScreen) {
-        "language" -> {
-            LanguageScreen(
-                onRussian = {
-                    encryptedPrefs.edit()
-                        .putString("language", "ru")
-                        .apply()
-
-                    currentScreen = "create_import"
-                },
-                onEnglish = {
-                    encryptedPrefs.edit()
-                        .putString("language", "en")
-                        .apply()
-
-                    currentScreen = "create_import"
-                }
-            )
-        }
-
-        "create_import" -> {
-            CreateImportScreen(
-                onCreate = {
-                    currentScreen = "create_wallet"
-                },
-                onImport = {
-                    currentScreen = "import_input"
-                }
-            )
-        }
-
-        "create_wallet" -> {
-            CreateWalletScreen(
-                onGenerate = {
-                    try {
-                        mnemonic = MnemonicUtils.generateMnemonic()
-                        currentScreen = "seed"
-                    } catch (exception: Exception) {
-                        exception.printStackTrace()
-                    }
-                },
-                onBack = {
-                    currentScreen = "create_import"
-                }
-            )
-        }
-
-        "seed" -> {
-            SeedScreen(
-                mnemonic = mnemonic,
-                onSaved = {
-                    try {
-                        val seed = MnemonicUtils.generateSeed(
-                            mnemonic,
-                            ""
-                        )
-
-                        val masterKey =
-                            Bip32ECKeyPair.generateKeyPair(seed)
-
-                        val derivedKey =
-                            Bip32ECKeyPair.deriveKeyPair(
-                                masterKey,
-                                ethereumPath()
-                            )
-
-                        val credentials =
-                            Credentials.create(derivedKey)
-
-                        encryptedPrefs.edit()
-                            .putString(
-                                "mnemonic_encrypted",
-                                mnemonic
-                            )
-                            .putString(
-                                "address",
-                                credentials.address
-                            )
-                            .apply()
-
-                        currentScreen = "pin"
-                    } catch (exception: Exception) {
-                        exception.printStackTrace()
-                    }
-                }
-            )
-        }
-
-        "import_input" -> {
+        "import" -> {
             ImportScreen(
-                onImport = { input ->
-                    importSeedInput = input
-                    currentScreen = "import_processing"
-                },
-                onBack = {
-                    currentScreen = "create_import"
+                onImport = { seed ->
+                    importSeedInput = seed
+                    currentScreen = "processing"
                 }
             )
         }
 
-        "import_processing" -> {
+        "processing" -> {
             LaunchedEffect(importSeedInput) {
                 try {
                     val normalizedMnemonic = importSeedInput
                         .trim()
+                        .lowercase()
                         .split(Regex("\\s+"))
                         .joinToString(" ")
 
-                    if (
-                        !MnemonicUtils.validateMnemonic(
+                    if (normalizedMnemonic.isBlank()) {
+                        throw IllegalArgumentException(
+                            "Seed-фраза пустая"
+                        )
+                    }
+
+                    val isValid =
+                        MnemonicUtils.validateMnemonic(
                             normalizedMnemonic
                         )
-                    ) {
+
+                    if (!isValid) {
                         throw IllegalArgumentException(
                             "Неверная seed-фраза"
                         )
                     }
 
-                    val seed = MnemonicUtils.generateSeed(
-                        normalizedMnemonic,
-                        ""
-                    )
+                    val seed =
+                        MnemonicUtils.generateSeed(
+                            normalizedMnemonic,
+                            ""
+                        )
 
                     val masterKey =
                         Bip32ECKeyPair.generateKeyPair(seed)
@@ -242,7 +158,7 @@ fun WalletApp() {
                     currentScreen = "pin"
                 } catch (exception: Exception) {
                     exception.printStackTrace()
-                    currentScreen = "import_input"
+                    currentScreen = "import"
                 }
             }
 
@@ -276,9 +192,8 @@ fun WalletApp() {
                         .clear()
                         .apply()
 
-                    mnemonic = ""
                     importSeedInput = ""
-                    currentScreen = "language"
+                    currentScreen = "import"
                 }
             )
         }
@@ -296,10 +211,13 @@ private fun ethereumPath(): IntArray {
 }
 
 @Composable
-private fun LanguageScreen(
-    onRussian: () -> Unit,
-    onEnglish: () -> Unit
+private fun ImportScreen(
+    onImport: (String) -> Unit
 ) {
+    var seed by remember {
+        mutableStateOf("")
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -313,210 +231,11 @@ private fun LanguageScreen(
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Выберите язык",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onRussian,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Русский")
-        }
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        Button(
-            onClick = onEnglish,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "English")
-        }
-    }
-}
-
-@Composable
-private fun CreateImportScreen(
-    onCreate: () -> Unit,
-    onImport: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
         Text(
-            text = "Добро пожаловать",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Создайте или импортируйте кошелек",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = onCreate,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Создать кошелек")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = onImport,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Импортировать")
-        }
-    }
-}
-
-@Composable
-private fun CreateWalletScreen(
-    onGenerate: () -> Unit,
-    onBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Создание кошелька",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onGenerate,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Сгенерировать seed-фразу")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Назад")
-        }
-    }
-}
-
-@Composable
-private fun SeedScreen(
-    mnemonic: String,
-    onSaved: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Text(
-            text = "Сохраните seed-фразу",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Запишите эти слова. Никому их не показывайте!",
-            fontSize = 13.sp,
-            color = Color.Gray,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = mnemonic,
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onSaved,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Я сохранил")
-        }
-    }
-}
-
-@Composable
-private fun ImportScreen(
-    onImport: (String) -> Unit,
-    onBack: () -> Unit
-) {
-    var seed by remember {
-        mutableStateOf("")
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Text(
-            text = "Импорт кошелька",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Введите seed-фразу",
-            fontSize = 13.sp,
+            text = "Вход по существующей seed-фразе",
+            fontSize = 15.sp,
             color = Color.Gray
         )
 
@@ -529,9 +248,11 @@ private fun ImportScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp),
+                .height(130.dp),
             placeholder = {
-                Text(text = "word1 word2 word3...")
+                Text(
+                    text = "Введите 12 или 24 слова"
+                )
             }
         )
 
@@ -539,25 +260,14 @@ private fun ImportScreen(
 
         Button(
             onClick = {
-                onImport(seed.trim())
+                onImport(seed)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             enabled = seed.trim().isNotEmpty()
         ) {
-            Text(text = "Импортировать")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Text(text = "Назад")
+            Text(text = "Войти")
         }
     }
 }
@@ -578,7 +288,7 @@ private fun LoadingScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Импортируем...",
+                text = "Проверяем seed-фразу...",
                 color = Color.Gray
             )
         }
@@ -609,7 +319,7 @@ private fun PinScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Для быстрого доступа",
+            text = "PIN будет использоваться для входа",
             fontSize = 13.sp,
             color = Color.Gray
         )
@@ -654,7 +364,7 @@ private fun PinScreen(
                 .height(56.dp),
             enabled = pin.length == 4
         ) {
-            Text(text = "Подтвердить")
+            Text(text = "Продолжить")
         }
     }
 }

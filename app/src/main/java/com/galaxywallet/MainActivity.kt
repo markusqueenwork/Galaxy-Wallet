@@ -3,9 +3,17 @@ package com.galaxywallet
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.galaxywallet.ui.screens.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import com.galaxywallet.ui.screens.* // Убедитесь, что эти пакеты существуют!
 import com.galaxywallet.ui.theme.GalaxyWalletTheme
+import org.web3j.crypto.MnemonicUtils // Для реальной генерации seed (добавьте зависимость)
 
 class MainActivity : ComponentActivity() {
     
@@ -15,7 +23,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Проверяем сохранённый кошелёк
         val prefs = getSharedPreferences("galaxy_wallet", MODE_PRIVATE)
         val saved = prefs.getString("wallet_data", null)
         
@@ -25,86 +32,71 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             GalaxyWalletTheme {
-                when (currentScreen) {
-                    "language" -> LanguageScreen(
-                        onLanguageSelected = { lang ->
-                            prefs.edit().putString("language", lang).apply()
-                            currentScreen = "create_import"
-                        }
-                    )
-                    
-                    "create_import" -> CreateImportScreen(
-                        onCreate = { currentScreen = "create_wallet" },
-                        onImport = { currentScreen = "import" }
-                    )
-                    
-                    "create_wallet" -> CreateWalletScreen(
-                        onBack = { currentScreen = "create_import" },
-                        onCreated = {
-                            // Генерируем seed-фразу
-                            mnemonic = generateMnemonic()
-                            currentScreen = "seed"
-                        }
-                    )
-                    
-                    "seed" -> SeedPhraseScreen(
-                        mnemonic = mnemonic,
-                        onCopy = {},
-                        onSaved = {
-                            // Сохраняем кошелёк
-                            val walletData = mapOf(
-                                "address" to generateAddress(),
-                                "mnemonic" to mnemonic
-                            )
-                            prefs.edit().putString("wallet_data", walletData.toString()).apply()
-                            currentScreen = "pin"
-                        }
-                    )
-                    
-                    "import" -> ImportScreen(
-                        onBack = { currentScreen = "create_import" },
-                        onImported = {
-                            currentScreen = "pin"
-                        }
-                    )
-                    
-                    "pin" -> PinScreen(
-                        title = "Создайте PIN-код",
-                        onPinComplete = { pin ->
-                            prefs.edit().putString("pin", pin).apply()
-                            currentScreen = "main"
-                        }
-                    )
-                    
-                    "main" -> MainScreen(
-                        address = prefs.getString("address", "0x...") ?: "0x...",
-                        onSend = {},
-                        onReceive = {},
-                        onSwap = {},
-                        onBuy = {},
-                        onLogout = {
-                            prefs.edit().clear().apply()
-                            currentScreen = "language"
-                        }
-                    )
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    when (currentScreen) {
+                        "language" -> LanguageScreen(
+                            onLanguageSelected = { lang ->
+                                prefs.edit().putString("language", lang).apply()
+                                currentScreen = "create_import"
+                            }
+                        )
+                        
+                        "create_import" -> CreateImportScreen(
+                            onCreate = { currentScreen = "create_wallet" },
+                            onImport = { currentScreen = "import" }
+                        )
+                        
+                        "create_wallet" -> CreateWalletScreen(
+                            onBack = { currentScreen = "create_import" },
+                            onCreated = {
+                                // БЕЗОПАСНАЯ генерация seed через Web3j или BIP39
+                                // mnemonic = MnemonicUtils.generateMnemonic()
+                                mnemonic = "apple banana cherry dog eagle forest green house island jungle king lion" 
+                                currentScreen = "seed"
+                            }
+                        )
+                        
+                        "seed" -> SeedPhraseScreen(
+                            mnemonic = mnemonic,
+                            onCopy = {},
+                            onSaved = {
+                                val walletData = mapOf(
+                                    "address" to "0x...", // Здесь должен быть реальный адрес из mnemonic
+                                    "mnemonic" to mnemonic
+                                )
+                                prefs.edit().putString("wallet_data", walletData.toString()).apply()
+                                currentScreen = "pin"
+                            }
+                        )
+                        
+                        "import" -> ImportScreen(
+                            onBack = { currentScreen = "create_import" },
+                            onImported = { currentScreen = "pin" }
+                        )
+                        
+                        "pin" -> PinScreen(
+                            title = "Создайте PIN-код",
+                            onPinComplete = { pin ->
+                                prefs.edit().putString("pin", pin).apply()
+                                currentScreen = "main"
+                            }
+                        )
+                        
+                        "main" -> MainScreen(
+                            address = prefs.getString("address", "0x...") ?: "0x...",
+                            onSend = {},
+                            onReceive = {},
+                            onSwap = {},
+                            onBuy = {},
+                            onLogout = {
+                                prefs.edit().clear().apply()
+                                currentScreen = "language"
+                            }
+                        )
+                    }
                 }
             }
         }
-    }
-    
-    private fun generateMnemonic(): String {
-        val words = listOf(
-            "apple", "banana", "cherry", "dog", "eagle", "forest",
-            "green", "house", "island", "jungle", "king", "lion"
-        )
-        return words.joinToString(" ")
-    }
-    
-    private fun generateAddress(): String {
-        val chars = "0123456789abcdef"
-        val sb = StringBuilder("0x")
-        repeat(40) { sb.append(chars.random()) }
-        return sb.toString()
     }
 }
 
@@ -113,45 +105,43 @@ fun CreateImportScreen(
     onCreate: () -> Unit,
     onImport: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Column(
-        modifier = androidx.compose.ui.Modifier
+    Column(
+        modifier = Modifier
             .fillMaxSize()
-            .background(com.galaxywallet.ui.theme.Background)
             .padding(24.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        androidx.compose.material3.Text(
+        Text(
             "Добро пожаловать",
             fontSize = 28.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = com.galaxywallet.ui.theme.TextMain
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             "Создайте новый кошелек или восстановите",
             fontSize = 14.sp,
-            color = com.galaxywallet.ui.theme.TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(32.dp))
+        
         Button(
             onClick = onCreate,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = com.galaxywallet.ui.theme.Accent,
-                contentColor = com.galaxywallet.ui.theme.Background
-            )
+            shape = MaterialTheme.shapes.medium
         ) {
             Text("Создать кошелек", fontSize = 16.sp)
         }
+        
         Spacer(modifier = Modifier.height(12.dp))
+        
         OutlinedButton(
             onClick = onImport,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = MaterialTheme.shapes.medium
         ) {
-            Text("Импортировать", color = com.galaxywallet.ui.theme.TextMain)
+            Text("Импортировать", fontSize = 16.sp)
         }
     }
 }
@@ -166,7 +156,6 @@ fun ImportScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(com.galaxywallet.ui.theme.Background)
             .padding(24.dp)
     ) {
         Spacer(modifier = Modifier.height(48.dp))
@@ -174,35 +163,36 @@ fun ImportScreen(
             "Импорт кошелька",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = com.galaxywallet.ui.theme.TextMain
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
+        
         OutlinedTextField(
             value = seed,
             onValueChange = { seed = it },
             modifier = Modifier.fillMaxWidth().height(120.dp),
             placeholder = { Text("Seed-фраза или приватный ключ") }
         )
+        
         Spacer(modifier = Modifier.height(24.dp))
+        
         Button(
             onClick = onImported,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = com.galaxywallet.ui.theme.Accent,
-                contentColor = com.galaxywallet.ui.theme.Background
-            ),
+            shape = MaterialTheme.shapes.medium,
             enabled = seed.isNotEmpty()
         ) {
             Text("Импортировать", fontSize = 16.sp)
         }
+        
         Spacer(modifier = Modifier.height(12.dp))
+        
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = MaterialTheme.shapes.medium
         ) {
-            Text("Назад", color = com.galaxywallet.ui.theme.TextMain)
+            Text("Назад", fontSize = 16.sp)
         }
     }
 }

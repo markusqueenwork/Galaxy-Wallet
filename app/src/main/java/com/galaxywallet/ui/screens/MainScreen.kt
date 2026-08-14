@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,7 +27,7 @@ data class Token(
     val amount: Double,
     val usdValue: Double,
     val iconColor: Color,
-    val changePercent: String = "+0.00%" // Добавил поле для динамики
+    val changePercent: String = "+0.00%"
 )
 
 data class NetworkInfo(
@@ -59,7 +57,6 @@ fun MainScreen(
         Token("Sui", "SUI", "Sui", 0.0, 0.0, SuiBlue)
     )
 
-    // Полный список сетей для мультичейн-кошелька
     val networks = listOf(
         NetworkInfo("Base", "EVM", iconColor = EthereumBlue),
         NetworkInfo("Solana", "SVM", iconColor = SolanaPurple),
@@ -75,13 +72,10 @@ fun MainScreen(
             .background(Background)
             .padding(horizontal = 20.dp)
     ) {
-        // Верхняя навигация (пилюли)
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PillButton("Аккаунт 1", false) {}
@@ -92,7 +86,6 @@ fun MainScreen(
             }
         }
 
-        // Адрес и кнопка скрытия баланса
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Row(
@@ -100,18 +93,9 @@ fun MainScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Аккаунт 1 ▾",
-                    fontSize = 14.sp,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text(text = "Аккаунт 1 ▾", fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
                 Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(TextMain)
-                        .clickable { balanceHidden = !balanceHidden },
+                    modifier = Modifier.size(32.dp).clip(CircleShape).background(TextMain).clickable { balanceHidden = !balanceHidden },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("•", fontSize = 18.sp, color = Background, fontWeight = FontWeight.Bold)
@@ -119,7 +103,6 @@ fun MainScreen(
             }
         }
 
-        // Главный баланс
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -128,89 +111,65 @@ fun MainScreen(
                 color = TextMain
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "+$0.00",
-                    fontSize = 15.sp,
-                    color = Green,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Box(
-                    modifier = Modifier
-                        .background(Green, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "+$0.00", fontSize = 15.sp, color = Green, fontWeight = FontWeight.SemiBold)
+                Box(modifier = Modifier.background(Green, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
                     Text("+0.00%", fontSize = 13.sp, color = Background, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // Кнопки действий (3 штуки, белые иконки)
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 ActionButton("↑", "Отправить", onSend)
                 ActionButton("↓", "Получить", onReceive)
                 ActionButton("+", "Купить", onBuy)
             }
         }
 
-        // Заголовок токенов
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "Токены", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextMain)
                 Text("›", fontSize = 20.sp, color = TextSecondary)
             }
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Список токенов с зелеными процентами
         items(tokens) { token ->
             TokenCard(token)
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        // Заголовок сетей
         item {
             Spacer(modifier = Modifier.height(28.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "Сети", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextMain)
                 Text("›", fontSize = 20.sp, color = TextSecondary)
             }
             Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // АДАПТИВНАЯ СЕТКА СЕТЕЙ (2 колонки, любое количество сетей)
-        item {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.heightIn(max = 400.dp) // Ограничиваем высоту, чтобы не скроллилось внутри LazyColumn
-            ) {
-                items(networks) { network ->
-                    NetworkGridCard(network)
+            
+            // ИСПРАВЛЕНИЕ: Безопасная сетка 2x2 без вложенных Lazy-контейнеров
+            val networkRows = networks.chunked(2)
+            networkRows.forEach { rowNetworks ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowNetworks.forEach { network ->
+                        NetworkGridCard(network = network, modifier = Modifier.weight(1f))
+                    }
+                    // Заполнитель, если элементов нечетное количество
+                    if (rowNetworks.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
             Spacer(modifier = Modifier.height(40.dp))
         }
 
-        // Кнопка выхода
         item {
             Button(
                 onClick = onLogout,
@@ -220,38 +179,24 @@ fun MainScreen(
             ) {
                 Text("Выйти", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
-            Spacer(modifier = Modifier.height(100.dp)) // Отступ для плавающей панели
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-// --- КОМПОНЕНТЫ ---
-
 @Composable
 private fun PillButton(text: String, active: Boolean, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50.dp))
-            .background(if (active) Accent else Surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+        modifier = Modifier.clip(RoundedCornerShape(50.dp)).background(if (active) Accent else Surface).clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
-        Text(
-            text = text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (active) Background else TextSecondary
-        )
+        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (active) Background else TextSecondary)
     }
 }
 
 @Composable
 private fun ActionButton(icon: String, label: String, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(onClick = onClick)) {
-        Box(
-            modifier = Modifier.size(64.dp).background(Surface, RoundedCornerShape(22.dp)),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(64.dp).background(Surface, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
             Text(icon, fontSize = 28.sp, color = TextMain)
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -262,16 +207,10 @@ private fun ActionButton(icon: String, label: String, onClick: () -> Unit) {
 @Composable
 private fun TokenCard(token: Token) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Surface, RoundedCornerShape(16.dp))
-            .padding(18.dp),
+        modifier = Modifier.fillMaxWidth().background(Surface, RoundedCornerShape(16.dp)).padding(18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.size(48.dp).background(token.iconColor, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.size(48.dp).background(token.iconColor, CircleShape), contentAlignment = Alignment.Center) {
             Text(text = token.symbol.take(1), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
         Spacer(modifier = Modifier.width(16.dp))
@@ -287,18 +226,13 @@ private fun TokenCard(token: Token) {
 }
 
 @Composable
-private fun NetworkGridCard(network: NetworkInfo) {
+private fun NetworkGridCard(network: NetworkInfo, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Surface, RoundedCornerShape(16.dp))
-            .padding(16.dp),
+        modifier = modifier.background(Surface, RoundedCornerShape(16.dp)).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(network.iconColor.copy(alpha = 0.2f), CircleShape),
+            modifier = Modifier.size(40.dp).background(network.iconColor.copy(alpha = 0.2f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(text = network.name.take(1), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = network.iconColor)
@@ -308,11 +242,7 @@ private fun NetworkGridCard(network: NetworkInfo) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(network.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = TextMain)
                 Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
+                Box(modifier = Modifier.background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
                     Text(network.badge, fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
                 }
             }

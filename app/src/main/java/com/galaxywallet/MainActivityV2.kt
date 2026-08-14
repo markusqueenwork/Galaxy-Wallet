@@ -39,7 +39,7 @@ import org.web3j.crypto.Bip32ECKeyPair
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.MnemonicUtils
 
-class MainActivity : ComponentActivity() {
+class MainActivityV2 : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,7 +94,6 @@ fun WalletApp() {
     }
 
     when (currentScreen) {
-
         "language" -> {
             LanguageScreen(
                 onRussian = {

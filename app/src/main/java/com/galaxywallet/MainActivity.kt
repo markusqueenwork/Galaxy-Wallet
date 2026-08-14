@@ -44,24 +44,24 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when (currentScreen) {
-                        "language" -> LanguageScreen(
+                        "language" -> LocalLanguageScreen(
                             onLanguageSelected = { lang ->
                                 encryptedPrefs.edit().putString("language", lang).apply()
                                 currentScreen = "create_import"
                             }
                         )
-                        "create_import" -> CreateImportScreen(
+                        "create_import" -> LocalCreateImportScreen(
                             onCreate = { currentScreen = "create_wallet" },
                             onImport = { currentScreen = "import" }
                         )
-                        "create_wallet" -> CreateWalletScreen(
+                        "create_wallet" -> LocalCreateWalletScreen(
                             onBack = { currentScreen = "create_import" },
                             onCreated = {
                                 mnemonic = MnemonicUtils.generateMnemonic()
                                 currentScreen = "seed"
                             }
                         )
-                        "seed" -> SeedPhraseScreen(
+                        "seed" -> LocalSeedPhraseScreen(
                             mnemonic = mnemonic,
                             onCopy = {},
                             onSaved = {
@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
                                     val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
                                     val credentials = Credentials.create(privateKeyHex)
                                     
-                                    saveEncryptedMnemonic(mnemonic)
+                                    encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
                                     encryptedPrefs.edit().putString("address", credentials.address).apply()
                                     currentScreen = "pin"
                                 } catch (e: Exception) {
@@ -79,17 +79,16 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
-                        "import" -> ImportScreen(
+                        "import" -> LocalImportScreen(
                             onBack = { currentScreen = "create_import" },
-                            // ИСПРАВЛЕНИЕ: Явное указание типа параметра
-                            onImported = { inputSeed: String ->
+                            onImported = { seed: String ->
                                 try {
-                                    val generatedSeed = MnemonicUtils.generateSeed(inputSeed, "")
+                                    val generatedSeed = MnemonicUtils.generateSeed(seed, "")
                                     val keyPair = ECKeyPair.create(generatedSeed)
                                     val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
                                     val credentials = Credentials.create(privateKeyHex)
                                     
-                                    saveEncryptedMnemonic(inputSeed)
+                                    encryptedPrefs.edit().putString("mnemonic_encrypted", seed).apply()
                                     encryptedPrefs.edit().putString("address", credentials.address).apply()
                                     currentScreen = "pin"
                                 } catch (e: Exception) {
@@ -97,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
-                        "pin" -> PinScreen(
+                        "pin" -> LocalPinScreen(
                             title = "Создайте PIN-код",
                             onPinComplete = { pin ->
                                 encryptedPrefs.edit().putString("pin", pin).apply()
@@ -120,15 +119,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private fun saveEncryptedMnemonic(mnemonic: String) {
-        encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
-    }
 }
 
-// --- ЗАГЛУШКИ ЭКРАНОВ ---
+// --- ЛОКАЛЬНЫЕ ЗАГЛУШКИ (с префиксом Local, чтобы не было конфликтов) ---
+
 @Composable
-fun LanguageScreen(onLanguageSelected: (String) -> Unit) {
+fun LocalLanguageScreen(onLanguageSelected: (String) -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Выберите язык", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
@@ -139,7 +135,7 @@ fun LanguageScreen(onLanguageSelected: (String) -> Unit) {
 }
 
 @Composable
-fun CreateImportScreen(onCreate: () -> Unit, onImport: () -> Unit) {
+fun LocalCreateImportScreen(onCreate: () -> Unit, onImport: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Добро пожаловать", fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(32.dp))
@@ -150,7 +146,7 @@ fun CreateImportScreen(onCreate: () -> Unit, onImport: () -> Unit) {
 }
 
 @Composable
-fun CreateWalletScreen(onBack: () -> Unit, onCreated: () -> Unit) {
+fun LocalCreateWalletScreen(onBack: () -> Unit, onCreated: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Создание кошелька", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
@@ -161,7 +157,7 @@ fun CreateWalletScreen(onBack: () -> Unit, onCreated: () -> Unit) {
 }
 
 @Composable
-fun SeedPhraseScreen(mnemonic: String, onCopy: () -> Unit, onSaved: () -> Unit) {
+fun LocalSeedPhraseScreen(mnemonic: String, onCopy: () -> Unit, onSaved: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("Сохраните seed-фразу", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
@@ -172,21 +168,30 @@ fun SeedPhraseScreen(mnemonic: String, onCopy: () -> Unit, onSaved: () -> Unit) 
 }
 
 @Composable
-fun ImportScreen(onBack: () -> Unit, onImported: (String) -> Unit) {
+fun LocalImportScreen(onBack: () -> Unit, onImported: (String) -> Unit) {
     var seed by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("Импорт кошелька", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(value = seed, onValueChange = { seed = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Seed-фраза") })
+        OutlinedTextField(
+            value = seed, 
+            onValueChange = { seed = it }, 
+            modifier = Modifier.fillMaxWidth(), 
+            placeholder = { Text("Seed-фраза") }
+        )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { onImported(seed) }, modifier = Modifier.fillMaxWidth(), enabled = seed.isNotEmpty()) { Text("Импортировать") }
+        Button(
+            onClick = { onImported(seed) }, 
+            modifier = Modifier.fillMaxWidth(), 
+            enabled = seed.isNotEmpty()
+        ) { Text("Импортировать") }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Назад") }
     }
 }
 
 @Composable
-fun PinScreen(title: String, onPinComplete: (String) -> Unit) {
+fun LocalPinScreen(title: String, onPinComplete: (String) -> Unit) {
     var pin by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -195,9 +200,4 @@ fun PinScreen(title: String, onPinComplete: (String) -> Unit) {
         Spacer(Modifier.height(24.dp))
         Button(onClick = { if (pin.length == 4) onPinComplete(pin) }) { Text("Подтвердить") }
     }
-}
-
-@Composable
-fun MainScreen(address: String, onSend: () -> Unit, onReceive: () -> Unit, onSwap: () -> Unit, onBuy: () -> Unit, onLogout: () -> Unit) {
-    // Этот Composable теперь полностью определен в MainScreen.kt ниже
 }

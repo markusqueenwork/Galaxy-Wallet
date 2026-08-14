@@ -41,11 +41,5 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("org.web3j:core:4.9.8") {
-        exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
-    }
-    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.web3j:core:4.8.7-android")
 }

@@ -96,322 +96,102 @@ fun WalletApp() {
     when (currentScreen) {
 
         "language" -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Galaxy Wallet",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            LanguageScreen(
+                onRussian = {
+                    encryptedPrefs.edit()
+                        .putString("language", "ru")
+                        .apply()
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    currentScreen = "create_import"
+                },
+                onEnglish = {
+                    encryptedPrefs.edit()
+                        .putString("language", "en")
+                        .apply()
 
-                Text(
-                    text = "Выберите язык",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        encryptedPrefs.edit()
-                            .putString("language", "ru")
-                            .apply()
-
-                        currentScreen = "create_import"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Русский")
+                    currentScreen = "create_import"
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        encryptedPrefs.edit()
-                            .putString("language", "en")
-                            .apply()
-
-                        currentScreen = "create_import"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "English")
-                }
-            }
+            )
         }
 
         "create_import" -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Добро пожаловать",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Создайте или импортируйте кошелек",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = {
-                        currentScreen = "create_wallet"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Создать кошелек")
+            CreateImportScreen(
+                onCreate = {
+                    currentScreen = "create_wallet"
+                },
+                onImport = {
+                    currentScreen = "import_input"
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        currentScreen = "import_input"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Импортировать")
-                }
-            }
+            )
         }
 
         "create_wallet" -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Создание кошелька",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        try {
-                            mnemonic = MnemonicUtils.generateMnemonic()
-                            currentScreen = "seed"
-                        } catch (exception: Exception) {
-                            exception.printStackTrace()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Сгенерировать seed-фразу")
+            CreateWalletScreen(
+                onGenerate = {
+                    try {
+                        mnemonic = MnemonicUtils.generateMnemonic()
+                        currentScreen = "seed"
+                    } catch (exception: Exception) {
+                        exception.printStackTrace()
+                    }
+                },
+                onBack = {
+                    currentScreen = "create_import"
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        currentScreen = "create_import"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Назад")
-                }
-            }
+            )
         }
 
         "seed" -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                Spacer(modifier = Modifier.height(48.dp))
+            SeedScreen(
+                mnemonic = mnemonic,
+                onSaved = {
+                    try {
+                        val seed = MnemonicUtils.generateSeed(
+                            mnemonic,
+                            ""
+                        )
 
-                Text(
-                    text = "Сохраните seed-фразу",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                        val masterKey =
+                            Bip32ECKeyPair.generateKeyPair(seed)
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Запишите эти 12 слов. Никому не показывайте!",
-                    fontSize = 13.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = mnemonic,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        try {
-                            val seed = MnemonicUtils.generateSeed(
-                                mnemonic,
-                                ""
+                        val derivedKey =
+                            Bip32ECKeyPair.deriveKeyPair(
+                                masterKey,
+                                ethereumPath()
                             )
 
-                            val masterKey = Bip32ECKeyPair.generateKeyPair(
-                                seed,
-                                0
+                        val credentials =
+                            Credentials.create(derivedKey)
+
+                        encryptedPrefs.edit()
+                            .putString(
+                                "mnemonic_encrypted",
+                                mnemonic
                             )
-
-                            val path = intArrayOf(
-                                44 or Bip32ECKeyPair.HARDENED_BIT,
-                                60 or Bip32ECKeyPair.HARDENED_BIT,
-                                0 or Bip32ECKeyPair.HARDENED_BIT,
-                                0,
-                                0
+                            .putString(
+                                "address",
+                                credentials.address
                             )
+                            .apply()
 
-                            val derivedKey =
-                                Bip32ECKeyPair.deriveKeyPair(
-                                    masterKey,
-                                    path
-                                )
-
-                            val credentials =
-                                Credentials.create(derivedKey)
-
-                            encryptedPrefs.edit()
-                                .putString(
-                                    "mnemonic_encrypted",
-                                    mnemonic
-                                )
-                                .putString(
-                                    "address",
-                                    credentials.address
-                                )
-                                .apply()
-
-                            currentScreen = "pin"
-                        } catch (exception: Exception) {
-                            exception.printStackTrace()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Я сохранил")
+                        currentScreen = "pin"
+                    } catch (exception: Exception) {
+                        exception.printStackTrace()
+                    }
                 }
-            }
+            )
         }
 
         "import_input" -> {
-            var seed by remember {
-                mutableStateOf("")
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                Spacer(modifier = Modifier.height(48.dp))
-
-                Text(
-                    text = "Импорт кошелька",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Введите seed-фразу",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedTextField(
-                    value = seed,
-                    onValueChange = {
-                        seed = it
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    placeholder = {
-                        Text(text = "word1 word2 word3...")
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        importSeedInput = seed.trim()
-                        currentScreen = "import_processing"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = seed.trim().isNotEmpty()
-                ) {
-                    Text(text = "Импортировать")
+            ImportScreen(
+                onImport = { input ->
+                    importSeedInput = input
+                    currentScreen = "import_processing"
+                },
+                onBack = {
+                    currentScreen = "create_import"
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        currentScreen = "create_import"
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(text = "Назад")
-                }
-            }
+            )
         }
 
         "import_processing" -> {
@@ -422,38 +202,28 @@ fun WalletApp() {
                         .split(Regex("\\s+"))
                         .joinToString(" ")
 
-                    require(
-                        MnemonicUtils.validateMnemonic(
+                    if (
+                        !MnemonicUtils.validateMnemonic(
                             normalizedMnemonic
                         )
                     ) {
-                        "Неверная seed-фраза"
+                        throw IllegalArgumentException(
+                            "Неверная seed-фраза"
+                        )
                     }
 
-                    val generatedSeed =
-                        MnemonicUtils.generateSeed(
-                            normalizedMnemonic,
-                            ""
-                        )
+                    val seed = MnemonicUtils.generateSeed(
+                        normalizedMnemonic,
+                        ""
+                    )
 
                     val masterKey =
-                        Bip32ECKeyPair.generateKeyPair(
-                            generatedSeed,
-                            0
-                        )
-
-                    val path = intArrayOf(
-                        44 or Bip32ECKeyPair.HARDENED_BIT,
-                        60 or Bip32ECKeyPair.HARDENED_BIT,
-                        0 or Bip32ECKeyPair.HARDENED_BIT,
-                        0,
-                        0
-                    )
+                        Bip32ECKeyPair.generateKeyPair(seed)
 
                     val derivedKey =
                         Bip32ECKeyPair.deriveKeyPair(
                             masterKey,
-                            path
+                            ethereumPath()
                         )
 
                     val credentials =
@@ -477,97 +247,19 @@ fun WalletApp() {
                 }
             }
 
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(
-                        color = Color(0xFFB39DDB)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Импортируем...",
-                        color = Color.Gray
-                    )
-                }
-            }
+            LoadingScreen()
         }
 
         "pin" -> {
-            var pin by remember {
-                mutableStateOf("")
-            }
+            PinScreen(
+                onConfirm = { pin ->
+                    encryptedPrefs.edit()
+                        .putString("pin", pin)
+                        .apply()
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Создайте PIN-код",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Для быстрого доступа",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "PIN: ${pin.padEnd(4, '•')}",
-                    fontSize = 32.sp,
-                    letterSpacing = 8.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedTextField(
-                    value = pin,
-                    onValueChange = { value ->
-                        if (value.length <= 4 && value.all { it.isDigit() }) {
-                            pin = value
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text(text = "PIN-код")
-                    },
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        if (pin.length == 4) {
-                            encryptedPrefs.edit()
-                                .putString("pin", pin)
-                                .apply()
-
-                            currentScreen = "main"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = pin.length == 4
-                ) {
-                    Text(text = "Подтвердить")
+                    currentScreen = "main"
                 }
-            }
+            )
         }
 
         "main" -> {
@@ -585,9 +277,385 @@ fun WalletApp() {
                         .clear()
                         .apply()
 
+                    mnemonic = ""
+                    importSeedInput = ""
                     currentScreen = "language"
                 }
             )
+        }
+    }
+}
+
+private fun ethereumPath(): IntArray {
+    return intArrayOf(
+        44 or Bip32ECKeyPair.HARDENED_BIT,
+        60 or Bip32ECKeyPair.HARDENED_BIT,
+        0 or Bip32ECKeyPair.HARDENED_BIT,
+        0,
+        0
+    )
+}
+
+@Composable
+private fun LanguageScreen(
+    onRussian: () -> Unit,
+    onEnglish: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Galaxy Wallet",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Выберите язык",
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onRussian,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Русский")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onEnglish,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "English")
+        }
+    }
+}
+
+@Composable
+private fun CreateImportScreen(
+    onCreate: () -> Unit,
+    onImport: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Добро пожаловать",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Создайте или импортируйте кошелек",
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = onCreate,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Создать кошелек")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onImport,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Импортировать")
+        }
+    }
+}
+
+@Composable
+private fun CreateWalletScreen(
+    onGenerate: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Создание кошелька",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onGenerate,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Сгенерировать seed-фразу")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Назад")
+        }
+    }
+}
+
+@Composable
+private fun SeedScreen(
+    mnemonic: String,
+    onSaved: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Text(
+            text = "Сохраните seed-фразу",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Запишите эти слова. Никому их не показывайте!",
+            fontSize = 13.sp,
+            color = Color.Gray,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = mnemonic,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onSaved,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Я сохранил")
+        }
+    }
+}
+
+@Composable
+private fun ImportScreen(
+    onImport: (String) -> Unit,
+    onBack: () -> Unit
+) {
+    var seed by remember {
+        mutableStateOf("")
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Text(
+            text = "Импорт кошелька",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Введите seed-фразу",
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = seed,
+            onValueChange = {
+                seed = it
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            placeholder = {
+                Text(text = "word1 word2 word3...")
+            }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                onImport(seed.trim())
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = seed.trim().isNotEmpty()
+        ) {
+            Text(text = "Импортировать")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(text = "Назад")
+        }
+    }
+}
+
+@Composable
+private fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator(
+                color = Color(0xFFB39DDB)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Импортируем...",
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+@Composable
+private fun PinScreen(
+    onConfirm: (String) -> Unit
+) {
+    var pin by remember {
+        mutableStateOf("")
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Создайте PIN-код",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Для быстрого доступа",
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "PIN: ${pin.padEnd(4, '•')}",
+            fontSize = 32.sp,
+            letterSpacing = 8.sp
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = pin,
+            onValueChange = { value ->
+                if (
+                    value.length <= 4 &&
+                    value.all { character ->
+                        character.isDigit()
+                    }
+                ) {
+                    pin = value
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = {
+                Text(text = "PIN-код")
+            },
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                onConfirm(pin)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = pin.length == 4
+        ) {
+            Text(text = "Подтвердить")
         }
     }
 }

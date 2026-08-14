@@ -15,20 +15,18 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import org.web3j.crypto.MnemonicUtils
 import org.web3j.crypto.Credentials
-import java.security.Security
+import org.web3j.crypto.ECKeyPair
 import android.content.SharedPreferences
 
 class MainActivity : ComponentActivity() {
 
     private var currentScreen by mutableStateOf("language")
     private var mnemonic by mutableStateOf("")
-    // ИСПРАВЛЕНИЕ 1: Тип изменен на SharedPreferences
-    private lateinit var encryptedPrefs: SharedPreferences 
+    private lateinit var encryptedPrefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Инициализация зашифрованного хранилища
         val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
         encryptedPrefs = EncryptedSharedPreferences.create(
             "galaxy_wallet_secure",
@@ -36,7 +34,7 @@ class MainActivity : ComponentActivity() {
             this,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        ) as SharedPreferences // Явное приведение типа для безопасности
+        ) as SharedPreferences
 
         if (encryptedPrefs.contains("mnemonic_encrypted")) {
             currentScreen = "main"
@@ -59,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         "create_wallet" -> CreateWalletScreen(
                             onBack = { currentScreen = "create_import" },
                             onCreated = {
-                                mnemonic = generateSecureMnemonic()
+                                mnemonic = MnemonicUtils.generateMnemonic()
                                 currentScreen = "seed"
                             }
                         )
@@ -67,11 +65,11 @@ class MainActivity : ComponentActivity() {
                             mnemonic = mnemonic,
                             onCopy = {},
                             onSaved = {
-                                // ИСПРАВЛЕНИЕ 3: Правильная цепочка генерации адреса
                                 try {
                                     val seed = MnemonicUtils.generateSeed(mnemonic, "")
-                                    val privateKey = org.web3j.crypto.ECKeyPair.create(seed).privateKey
-                                    val credentials = Credentials.create(privateKey)
+                                    val keyPair = ECKeyPair.create(seed)
+                                    val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
+                                    val credentials = Credentials.create(privateKeyHex)
                                     
                                     saveEncryptedMnemonic(mnemonic)
                                     encryptedPrefs.edit()
@@ -79,20 +77,20 @@ class MainActivity : ComponentActivity() {
                                         .apply()
                                     currentScreen = "pin"
                                 } catch (e: Exception) {
-                                    e.printStackTrace() // Для отладки в логах
+                                    e.printStackTrace()
                                 }
                             }
                         )
                         "import" -> ImportScreen(
                             onBack = { currentScreen = "create_import" },
-                            // ИСПРАВЛЕНИЕ 3: Обработка импорта с правильной криптографией
-                            onImported = { inputSeed ->
+                            onImported = { seed: String ->
                                 try {
-                                    val seed = MnemonicUtils.generateSeed(inputSeed, "")
-                                    val privateKey = org.web3j.crypto.ECKeyPair.create(seed).privateKey
-                                    val credentials = Credentials.create(privateKey)
+                                    val generatedSeed = MnemonicUtils.generateSeed(seed, "")
+                                    val keyPair = ECKeyPair.create(generatedSeed)
+                                    val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
+                                    val credentials = Credentials.create(privateKeyHex)
                                     
-                                    saveEncryptedMnemonic(inputSeed)
+                                    saveEncryptedMnemonic(seed)
                                     encryptedPrefs.edit()
                                         .putString("address", credentials.address)
                                         .apply()
@@ -111,6 +109,10 @@ class MainActivity : ComponentActivity() {
                         )
                         "main" -> MainScreen(
                             address = encryptedPrefs.getString("address", "0x...") ?: "0x...",
+                            onSend = {},
+                            onReceive = {},
+                            onSwap = {},
+                            onBuy = {},
                             onLogout = {
                                 encryptedPrefs.edit().clear().apply()
                                 currentScreen = "language"
@@ -122,10 +124,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateSecureMnemonic(): String {
-        return MnemonicUtils.generateMnemonic()
-    }
-
     private fun saveEncryptedMnemonic(mnemonic: String) {
         encryptedPrefs.edit()
             .putString("mnemonic_encrypted", mnemonic)
@@ -133,9 +131,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// --- ЗАГЛУШКИ ЭКРАНОВ (ИСПРАВЛЕНИЕ 2) ---
-// Эти функции должны быть в отдельных файлах, но для гарантии сборки 
-// я добавил их сюда. Перенесите их позже в ui/screens/
+// --- ЗАГЛУШКИ ЭКРАНОВ ДЛЯ ГАРАНТИРОВАННОЙ СБОРКИ ---
 
 @Composable
 fun LanguageScreen(onLanguageSelected: (String) -> Unit) {
@@ -208,7 +204,7 @@ fun PinScreen(title: String, onPinComplete: (String) -> Unit) {
 }
 
 @Composable
-fun MainScreen(address: String, onLogout: () -> Unit) {
+fun MainScreen(address: String, onSend: () -> Unit, onReceive: () -> Unit, onSwap: () -> Unit, onBuy: () -> Unit, onLogout: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("Главный экран", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))

@@ -17,7 +17,6 @@ import androidx.security.crypto.MasterKeys
 import org.web3j.crypto.MnemonicUtils
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
-import org.web3j.crypto.Hash
 import android.content.SharedPreferences
 import com.galaxywallet.ui.screens.MainScreen
 
@@ -74,11 +73,6 @@ fun WalletApp() {
                     encryptedPrefs.edit().putString("language", "en").apply()
                     currentScreen = "create_import"
                 }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("English") }
-                Spacer(Modifier.height(12.dp))
-                Button(onClick = {
-                    encryptedPrefs.edit().putString("language", "ja").apply()
-                    currentScreen = "create_import"
-                }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("日本語") }
             }
         }
 
@@ -161,8 +155,9 @@ fun WalletApp() {
                 Button(
                     onClick = {
                         try {
+                            // ИСПРАВЛЕНИЕ: Передаем seed напрямую, без Hash.sha256
                             val seed = MnemonicUtils.generateSeed(mnemonic, "")
-                            val keyPair = ECKeyPair.create(Hash.sha256(seed))
+                            val keyPair = ECKeyPair.create(seed)
                             val hex = keyPair.privateKey.toString(16).padStart(64, '0')
                             val cred = Credentials.create(hex)
                             encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
@@ -211,8 +206,9 @@ fun WalletApp() {
         "import_processing" -> {
             LaunchedEffect(Unit) {
                 try {
+                    // ИСПРАВЛЕНИЕ: Передаем seed напрямую, без Hash.sha256
                     val genSeed = MnemonicUtils.generateSeed(importSeedInput, "")
-                    val keyPair = ECKeyPair.create(Hash.sha256(genSeed))
+                    val keyPair = ECKeyPair.create(genSeed)
                     val hex = keyPair.privateKey.toString(16).padStart(64, '0')
                     val cred = Credentials.create(hex)
                     encryptedPrefs.edit().putString("mnemonic_encrypted", importSeedInput).apply()

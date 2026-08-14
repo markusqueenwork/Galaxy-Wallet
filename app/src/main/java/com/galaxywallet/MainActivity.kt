@@ -72,9 +72,7 @@ class MainActivity : ComponentActivity() {
                                     val credentials = Credentials.create(privateKeyHex)
                                     
                                     saveEncryptedMnemonic(mnemonic)
-                                    encryptedPrefs.edit()
-                                        .putString("address", credentials.address)
-                                        .apply()
+                                    encryptedPrefs.edit().putString("address", credentials.address).apply()
                                     currentScreen = "pin"
                                 } catch (e: Exception) {
                                     e.printStackTrace()
@@ -83,17 +81,16 @@ class MainActivity : ComponentActivity() {
                         )
                         "import" -> ImportScreen(
                             onBack = { currentScreen = "create_import" },
-                            onImported = { seed: String ->
+                            // ИСПРАВЛЕНИЕ: Явное указание типа параметра
+                            onImported = { inputSeed: String ->
                                 try {
-                                    val generatedSeed = MnemonicUtils.generateSeed(seed, "")
+                                    val generatedSeed = MnemonicUtils.generateSeed(inputSeed, "")
                                     val keyPair = ECKeyPair.create(generatedSeed)
                                     val privateKeyHex = keyPair.privateKey.toString(16).padStart(64, '0')
                                     val credentials = Credentials.create(privateKeyHex)
                                     
-                                    saveEncryptedMnemonic(seed)
-                                    encryptedPrefs.edit()
-                                        .putString("address", credentials.address)
-                                        .apply()
+                                    saveEncryptedMnemonic(inputSeed)
+                                    encryptedPrefs.edit().putString("address", credentials.address).apply()
                                     currentScreen = "pin"
                                 } catch (e: Exception) {
                                     e.printStackTrace()
@@ -125,14 +122,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveEncryptedMnemonic(mnemonic: String) {
-        encryptedPrefs.edit()
-            .putString("mnemonic_encrypted", mnemonic)
-            .apply()
+        encryptedPrefs.edit().putString("mnemonic_encrypted", mnemonic).apply()
     }
 }
 
-// --- ЗАГЛУШКИ ЭКРАНОВ ДЛЯ ГАРАНТИРОВАННОЙ СБОРКИ ---
-
+// --- ЗАГЛУШКИ ЭКРАНОВ ---
 @Composable
 fun LanguageScreen(onLanguageSelected: (String) -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -205,11 +199,5 @@ fun PinScreen(title: String, onPinComplete: (String) -> Unit) {
 
 @Composable
 fun MainScreen(address: String, onSend: () -> Unit, onReceive: () -> Unit, onSwap: () -> Unit, onBuy: () -> Unit, onLogout: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Главный экран", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        Text("Адрес: $address", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(24.dp))
-        OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Выйти") }
-    }
+    // Этот Composable теперь полностью определен в MainScreen.kt ниже
 }

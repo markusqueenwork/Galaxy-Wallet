@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
@@ -19,8 +20,10 @@ import org.web3j.crypto.ECKeyPair
 import android.content.SharedPreferences
 import com.galaxywallet.ui.screens.MainScreen
 
+// Жесткий HEX-код акцентного цвета, чтобы не зависеть от импортов темы
+private val ACCENT_COLOR = Color(0xFFB39DDB)
+
 class MainActivity : ComponentActivity() {
-    // Добавляем состояние для экрана импорта, чтобы избежать лямбд
     private var currentScreen by mutableStateOf("language")
     private var mnemonic by mutableStateOf("")
     private var importSeedInput by mutableStateOf("") 
@@ -41,14 +44,16 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when (currentScreen) {
-                        "language" -> LocalLanguageScreen(onLanguageSelected = { lang ->
-                            encryptedPrefs.edit().putString("language", lang).apply()
-                            currentScreen = "create_import"
+                        "language" -> LocalLanguageScreen(onNext = { 
+                            encryptedPrefs.edit().putString("language", "ru").apply()
+                            currentScreen = "create_import" 
                         })
+                        
                         "create_import" -> LocalCreateImportScreen(
                             onCreate = { currentScreen = "create_wallet" },
-                            onImportClick = { currentScreen = "import_input" } // Переходим на экран ввода
+                            onImportClick = { currentScreen = "import_input" }
                         )
+                        
                         "create_wallet" -> LocalCreateWalletScreen(
                             onBack = { currentScreen = "create_import" },
                             onCreated = {
@@ -56,7 +61,8 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = "seed"
                             }
                         )
-                        "seed" -> LocalSeedPhraseScreen(mnemonic = mnemonic, onCopy = {}, onSaved = {
+                        
+                        "seed" -> LocalSeedPhraseScreen(mnemonic = mnemonic, onSaved = {
                             try {
                                 val seed = MnemonicUtils.generateSeed(mnemonic, "")
                                 val keyPair = ECKeyPair.create(seed)
@@ -68,16 +74,14 @@ class MainActivity : ComponentActivity() {
                             } catch (e: Exception) { e.printStackTrace() }
                         })
                         
-                        // НОВЫЙ ЭКРАН ВВОДА SEED (Без лямбд!)
                         "import_input" -> LocalImportInputScreen(
                             onBack = { currentScreen = "create_import" },
                             onConfirm = { input ->
                                 importSeedInput = input
-                                currentScreen = "import_processing" // Переходим на обработку
+                                currentScreen = "import_processing"
                             }
                         )
                         
-                        // ЭКРАН ОБРАБОТКИ ИМПОРТА (Логика здесь, а не в лямбде)
                         "import_processing" -> {
                             LaunchedEffect(Unit) {
                                 try {
@@ -90,18 +94,19 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = "pin"
                                 } catch (e: Exception) { 
                                     e.printStackTrace() 
-                                    currentScreen = "import_input" // Возврат при ошибке
+                                    currentScreen = "import_input"
                                 }
                             }
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = Accent)
+                                CircularProgressIndicator(color = ACCENT_COLOR)
                             }
                         }
 
-                        "pin" -> LocalPinScreen(title = "Создайте PIN-код", onPinComplete = { pin ->
+                        "pin" -> LocalPinScreen(onComplete = { pin ->
                             encryptedPrefs.edit().putString("pin", pin).apply()
                             currentScreen = "main"
                         })
+                        
                         "main" -> MainScreen(
                             address = encryptedPrefs.getString("address", "0x...") ?: "0x...",
                             onSend = {}, onReceive = {}, onSwap = {}, onBuy = {},
@@ -117,16 +122,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// --- ЗАГЛУШКИ ---
+// --- ПРОСТЫЕ ЗАГЛУШКИ БЕЗ СЛОЖНЫХ ПАРАМЕТРОВ ---
 
 @Composable
-fun LocalLanguageScreen(onLanguageSelected: (String) -> Unit) {
+fun LocalLanguageScreen(onNext: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Выберите язык", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { onLanguageSelected("ru") }) { Text("Русский") }
+        Button(onClick = onNext) { Text("Русский") }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = { onLanguageSelected("en") }) { Text("English") }
+        Button(onClick = onNext) { Text("English") }
     }
 }
 
@@ -153,7 +158,7 @@ fun LocalCreateWalletScreen(onBack: () -> Unit, onCreated: () -> Unit) {
 }
 
 @Composable
-fun LocalSeedPhraseScreen(mnemonic: String, onCopy: () -> Unit, onSaved: () -> Unit) {
+fun LocalSeedPhraseScreen(mnemonic: String, onSaved: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("Сохраните seed-фразу", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
@@ -163,7 +168,6 @@ fun LocalSeedPhraseScreen(mnemonic: String, onCopy: () -> Unit, onSaved: () -> U
     }
 }
 
-// НОВЫЙ КОМПОНЕНТ ДЛЯ ВВОДА (Простой, без сложных параметров)
 @Composable
 fun LocalImportInputScreen(onBack: () -> Unit, onConfirm: (String) -> Unit) {
     var seed by remember { mutableStateOf("") }
@@ -179,13 +183,13 @@ fun LocalImportInputScreen(onBack: () -> Unit, onConfirm: (String) -> Unit) {
 }
 
 @Composable
-fun LocalPinScreen(title: String, onPinComplete: (String) -> Unit) {
+fun LocalPinScreen(onComplete: (String) -> Unit) {
     var pin by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Создайте PIN-код", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
         Text("PIN: ${pin.padEnd(4, '•')}", fontSize = 32.sp)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { if (pin.length == 4) onPinComplete(pin) }) { Text("Подтвердить") }
+        Button(onClick = { if (pin.length == 4) onComplete(pin) }) { Text("Подтвердить") }
     }
 }
